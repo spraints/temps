@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -36,6 +38,11 @@ func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) 
 		return nil, fmt.Errorf("could not get current conditions: %w", err)
 	}
 	defer res.Body.Close()
+	resData, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	var data struct {
 		Observations []struct {
 			Imperial struct {
@@ -43,11 +50,12 @@ func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) 
 			} `json:"imperial"`
 		} `json:"observations"`
 	}
-
-	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
+	if err := json.Unmarshal(resData, &data); err != nil {
+		log.Printf("error parsing current conditions: %s", string(resData))
 		return nil, fmt.Errorf("error parsing current conditions: %w", err)
 	}
 	if len(data.Observations) == 0 {
+		log.Printf("empty observations: %s", string(resData))
 		return nil, fmt.Errorf("no observations!")
 	}
 	return &Conditions{

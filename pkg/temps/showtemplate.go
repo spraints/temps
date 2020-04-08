@@ -14,9 +14,9 @@ const showTemplate = `
   <body>
     <h1>Temperatures (°F) around the farm</h1>
     <table>
-      <tr><th>Outside</th><td>{{.Outdoor | printf "%0.2f"}}°F</td></tr>
+      <tr><th>Outside</th><td>{{.Outdoor}}°F</td></tr>
       {{range .Sensors}}
-      <tr><th>{{.Name}}</th><td>{{.Temperature | printf "%0.2f"}}°F</td></tr>
+      <tr><th>{{.Name}}</th><td>{{.Temperature}}°F</td></tr>
       {{end}}
     </table>
   </body>

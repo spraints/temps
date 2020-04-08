@@ -19,7 +19,7 @@ type Temps struct {
 	lock        sync.RWMutex
 }
 
-type fahrenheit float32
+type fahrenheit int32
 
 type sensor struct {
 	Name        string
