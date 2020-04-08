@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec env TEMPS_SECRET=abc go run ./cmd/temps
