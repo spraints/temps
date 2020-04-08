@@ -4,10 +4,21 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 )
 
 type Temps struct {
-	secret string
+	secret      string
+	outdoorTemp fahrenheit
+	sensors     []*sensor
+	lock        sync.RWMutex
+}
+
+type fahrenheit float32
+
+type sensor struct {
+	Name        string
+	Temperature fahrenheit
 }
 
 func New(config Config) *Temps {
@@ -32,8 +43,25 @@ func (t *Temps) Poll(ctx context.Context) {
 	}
 }
 
-func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "TODO", 500)
+func (t *Temps) showTemps(w http.ResponseWriter, _ *http.Request) {
+	sensors, outdoor := t.getDataForShow()
+
+	if err := renderShowTemplateFahrenheit(w, sensors, outdoor); err != nil {
+		http.Error(w, "Error", 500)
+		log.Printf("error rendering temperatures: %v", err)
+	}
+}
+
+func (t *Temps) getDataForShow() ([]sensor, fahrenheit) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	sensors := make([]sensor, 0, len(t.sensors))
+	for _, sensor := range t.sensors {
+		sensors = append(sensors, *sensor)
+	}
+
+	return sensors, t.outdoorTemp
 }
 
 func (t *Temps) updateTagTemp(w http.ResponseWriter, r *http.Request) {
