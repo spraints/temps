@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -83,7 +84,7 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 
 	return func(ctx context.Context) {
 		go func() {
-			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)
 			}
 		}()

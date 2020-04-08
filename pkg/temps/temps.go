@@ -5,10 +5,15 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
+
+	"github.com/spraints/temps/pkg/wu"
 )
 
 type Temps struct {
-	secret      string
+	secret string
+	wu     *wu.Client
+
 	outdoorTemp fahrenheit
 	sensors     []*sensor
 	lock        sync.RWMutex
@@ -22,7 +27,10 @@ type sensor struct {
 }
 
 func New(config Config) *Temps {
-	return &Temps{secret: config.Secret}
+	return &Temps{
+		secret: config.Secret,
+		wu:     wu.New(config.WundergroundAPIKey, config.WundergroundStationID),
+	}
 }
 
 func (t *Temps) Register(mux *http.ServeMux) {
@@ -31,15 +39,21 @@ func (t *Temps) Register(mux *http.ServeMux) {
 }
 
 func (t *Temps) Poll(ctx context.Context) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
 	for {
+		if conditions, err := t.wu.GetCurrentConditions(ctx); err != nil {
+			log.Print(err)
+		} else {
+			t.setOutdoorTemp(conditions)
+		}
+
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 		}
-
-		log.Printf("TODO - actually poll!")
-		return
 	}
 }
 
@@ -52,6 +66,17 @@ func (t *Temps) showTemps(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+func (t *Temps) updateTagTemp(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "TODO", 500)
+}
+
+func (t *Temps) setOutdoorTemp(conditions *wu.Conditions) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	t.outdoorTemp = fahrenheit(conditions.ImperialTemperature)
+}
+
 func (t *Temps) getDataForShow() ([]sensor, fahrenheit) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
@@ -62,8 +87,4 @@ func (t *Temps) getDataForShow() ([]sensor, fahrenheit) {
 	}
 
 	return sensors, t.outdoorTemp
-}
-
-func (t *Temps) updateTagTemp(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "TODO", 500)
 }
