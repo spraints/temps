@@ -2,10 +2,13 @@ package temps
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -65,10 +68,20 @@ func (t *Temps) Poll(ctx context.Context) {
 	}
 }
 
-func (t *Temps) showTemps(w http.ResponseWriter, _ *http.Request) {
-	sensors, outdoor := t.getDataForShow()
+func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
+	renderer := renderShowTemplateFahrenheit
+	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
+		renderer = func(w io.Writer, sensors []sensor, outdoor fahrenheit) error {
+			fmt.Fprintf(w, "Outside: %.0f °F\n", outdoor)
+			for _, sensor := range sensors {
+				fmt.Fprintf(w, "%s: %.0f °F\n", sensor.Name, sensor.Temperature)
+			}
+			return nil
+		}
+	}
 
-	if err := renderShowTemplateFahrenheit(w, sensors, outdoor); err != nil {
+	sensors, outdoor := t.getDataForShow()
+	if err := renderer(w, sensors, outdoor); err != nil {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
