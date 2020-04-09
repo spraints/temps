@@ -40,7 +40,7 @@ func New(config Config) *Temps {
 
 func (t *Temps) Register(mux chi.Router) {
 	mux.Get("/", t.showTemps)
-	mux.Get("/mytaglist/{secret}/{uuid}", t.handleTagData)
+	mux.Put("/mytaglist/{secret}/{uuid}", t.handleTagData)
 }
 
 func (t *Temps) Poll(ctx context.Context) {
@@ -81,9 +81,8 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	q := r.URL.Query()
-	name := q.Get("name")
-	temperature, err := strconv.Atoi(q.Get("temperature"))
+	name := r.FormValue("name")
+	temperature, err := strconv.Atoi(r.FormValue("temperature"))
 	if err != nil {
 		log.Print(err)
 		return
