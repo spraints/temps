@@ -1,9 +1,7 @@
 #!/bin/bash
 
-go test ./cmd/... ./pkg/... || exit 1
-
 . .env
-
-export TEMPS_SECRET=abc
+export TEMPS_SECRET
 export TEMPS_WUNDERGROUND_API_KEY
+
 exec go run ./cmd/temps

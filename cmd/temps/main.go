@@ -18,7 +18,7 @@ import (
 )
 
 type Config struct {
-	ListenAddr string `default:"127.0.0.1:8080"`
+	ListenAddr string `default:"127.0.0.1:8080" split_words:"true"`
 	temps.Config
 }
 
@@ -37,7 +37,7 @@ func main() {
 	var shutdown sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	run(ctx, &shutdown, "poll current temperature", svc.Poll)
-	run(ctx, &shutdown, "http server", newHTTPServer(&cfg, svc))
+	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc))
 	<-stopSignal
 	cancel()
 	wait(10*time.Second, &shutdown)
