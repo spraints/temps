@@ -1,3 +1,0 @@
-/ - show temps
-/<something> - receive temps from kumo app
-goroutine - poll wunderground for current temp
