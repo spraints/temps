@@ -14,6 +14,8 @@ import (
 	"github.com/spraints/temps/pkg/wu"
 )
 
+const temperatureUpdateInterval = 10 * time.Minute
+
 type Temps struct {
 	secret string
 	wu     *wu.Client
@@ -44,7 +46,7 @@ func (t *Temps) Register(mux chi.Router) {
 }
 
 func (t *Temps) Poll(ctx context.Context) {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(temperatureUpdateInterval)
 	defer ticker.Stop()
 
 	for {
