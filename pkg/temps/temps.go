@@ -25,7 +25,7 @@ type Temps struct {
 	lock        sync.RWMutex
 }
 
-type fahrenheit int32
+type fahrenheit float64
 
 type sensor struct {
 	id          string
@@ -53,7 +53,7 @@ func (t *Temps) Poll(ctx context.Context) {
 		if conditions, err := t.wu.GetCurrentConditions(ctx); err != nil {
 			log.Print(err)
 		} else {
-			log.Printf("OUTDOORS -> %d F", conditions.ImperialTemperature)
+			log.Printf("OUTDOORS -> %.0f F", conditions.ImperialTemperature)
 			t.setOutdoorTemp(conditions)
 		}
 
@@ -85,13 +85,13 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.FormValue("name")
-	temperature, err := strconv.Atoi(r.FormValue("temperature"))
+	temperature, err := strconv.ParseFloat(r.FormValue("temperature"), 64)
 	if err != nil {
 		log.Print(err)
 		return
 	}
 
-	log.Printf("[%s] (%s) -> %d F", id, name, temperature)
+	log.Printf("[%s] (%s) -> %.0f F", id, name, temperature)
 	t.updateTagData(id, name, fahrenheit(temperature))
 }
 

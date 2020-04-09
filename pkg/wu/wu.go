@@ -23,7 +23,7 @@ func New(apiToken string, stationID string) *Client {
 }
 
 type Conditions struct {
-	ImperialTemperature int
+	ImperialTemperature float64
 }
 
 func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) {
@@ -46,7 +46,7 @@ func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) 
 	var data struct {
 		Observations []struct {
 			Imperial struct {
-				Temperature int `json:"temp"`
+				Temperature float64 `json:"temp"`
 			} `json:"imperial"`
 		} `json:"observations"`
 	}
