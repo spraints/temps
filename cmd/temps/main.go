@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/spraints/temps/pkg/temps"
@@ -67,11 +68,11 @@ func wait(timeout time.Duration, wg *sync.WaitGroup) {
 }
 
 type service interface {
-	Register(mux *http.ServeMux)
+	Register(mux chi.Router)
 }
 
 func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 
 	for _, svc := range services {
 		svc.Register(mux)

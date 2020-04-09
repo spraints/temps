@@ -4,8 +4,12 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/go-chi/chi"
 
 	"github.com/spraints/temps/pkg/wu"
 )
@@ -15,13 +19,14 @@ type Temps struct {
 	wu     *wu.Client
 
 	outdoorTemp fahrenheit
-	sensors     []*sensor
+	sensors     sensorSlice
 	lock        sync.RWMutex
 }
 
 type fahrenheit int32
 
 type sensor struct {
+	id          string
 	Name        string
 	Temperature fahrenheit
 }
@@ -33,9 +38,9 @@ func New(config Config) *Temps {
 	}
 }
 
-func (t *Temps) Register(mux *http.ServeMux) {
-	mux.HandleFunc("/", t.showTemps)
-	mux.HandleFunc("/mytaglist/"+t.secret+"/", t.updateTagTemp)
+func (t *Temps) Register(mux chi.Router) {
+	mux.Get("/", t.showTemps)
+	mux.Get("/mytaglist/{secret}/{uuid}", t.handleTagData)
 }
 
 func (t *Temps) Poll(ctx context.Context) {
@@ -66,8 +71,49 @@ func (t *Temps) showTemps(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (t *Temps) updateTagTemp(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "TODO", 500)
+func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
+	defer w.Write([]byte("OK!\n"))
+
+	secret := chi.URLParam(r, "secret")
+	id := chi.URLParam(r, "uuid")
+
+	if secret != t.secret || id == "" {
+		return
+	}
+
+	q := r.URL.Query()
+	name := q.Get("name")
+	temperature, err := strconv.Atoi(q.Get("temperature"))
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	t.updateTagData(id, name, fahrenheit(temperature))
+}
+
+func (t *Temps) updateTagData(id string, name string, temperature fahrenheit) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	for _, sensor := range t.sensors {
+		if sensor.id == id {
+			if name != "" {
+				sensor.Name = name
+			}
+			sensor.Temperature = temperature
+			return
+		}
+	}
+
+	sensor := &sensor{
+		id:          id,
+		Name:        name,
+		Temperature: temperature,
+	}
+
+	t.sensors = append(t.sensors, sensor)
+	sort.Sort(t.sensors)
 }
 
 func (t *Temps) setOutdoorTemp(conditions *wu.Conditions) {
