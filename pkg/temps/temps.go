@@ -20,12 +20,16 @@ import (
 const temperatureUpdateInterval = 10 * time.Minute
 
 type Temps struct {
-	secret string
-	wu     *wu.Client
+	secret  string
+	weather WeatherClient
 
 	outdoorTemp fahrenheit
 	sensors     sensorSlice
 	lock        sync.RWMutex
+}
+
+type WeatherClient interface {
+	GetCurrentConditions(ctx context.Context) (*wu.Conditions, error)
 }
 
 type fahrenheit float64
@@ -38,8 +42,8 @@ type sensor struct {
 
 func New(config Config) *Temps {
 	return &Temps{
-		secret: config.Secret,
-		wu:     wu.New(config.WundergroundAPIKey, config.WundergroundStationID),
+		secret:  config.Secret,
+		weather: wu.New(config.WundergroundAPIKey, config.WundergroundStationID),
 	}
 }
 
@@ -53,7 +57,7 @@ func (t *Temps) Poll(ctx context.Context) {
 	defer ticker.Stop()
 
 	for {
-		if conditions, err := t.wu.GetCurrentConditions(ctx); err != nil {
+		if conditions, err := t.weather.GetCurrentConditions(ctx); err != nil {
 			log.Print(err)
 		} else {
 			log.Printf("OUTDOORS -> %.0f F", conditions.ImperialTemperature)
