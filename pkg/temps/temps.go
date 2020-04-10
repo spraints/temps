@@ -71,13 +71,7 @@ func (t *Temps) Poll(ctx context.Context) {
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 	renderer := renderShowTemplateFahrenheit
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
-		renderer = func(w io.Writer, sensors []sensor, outdoor fahrenheit) error {
-			fmt.Fprintf(w, "Outside: %.0f °F\n", outdoor)
-			for _, sensor := range sensors {
-				fmt.Fprintf(w, "%s: %.0f °F\n", sensor.Name, sensor.Temperature)
-			}
-			return nil
-		}
+		renderer = renderShowText
 	}
 
 	sensors, outdoor := t.getDataForShow()
@@ -85,6 +79,19 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
+}
+
+func renderShowText(w io.Writer, sensors []sensor, outdoor fahrenheit) error {
+	show := func(label string, temp fahrenheit) {
+		fmt.Fprintf(w, "%15s %.0f °F\n", label, temp)
+	}
+
+	show("Outside", outdoor)
+	for _, sensor := range sensors {
+		show(sensor.Name, sensor.Temperature)
+	}
+
+	return nil
 }
 
 func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
