@@ -15,6 +15,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/spraints/temps/pkg/temps"
+	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
 )
 
@@ -114,5 +115,5 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 type fakeWeather float64
 
 func (f fakeWeather) GetCurrentConditions(ctx context.Context) (*wu.Conditions, error) {
-	return &wu.Conditions{ImperialTemperature: float64(f)}, nil
+	return &wu.Conditions{Temperature: units.Fahrenheit(f)}, nil
 }

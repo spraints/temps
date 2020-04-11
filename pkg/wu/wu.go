@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/spraints/temps/pkg/units"
 )
 
 type Client struct {
@@ -23,7 +25,7 @@ func New(apiToken string, stationID string) *Client {
 }
 
 type Conditions struct {
-	ImperialTemperature float64
+	Temperature units.Temperature
 }
 
 func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) {
@@ -59,6 +61,6 @@ func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) 
 		return nil, fmt.Errorf("no observations!")
 	}
 	return &Conditions{
-		ImperialTemperature: data.Observations[0].Imperial.Temperature,
+		Temperature: units.Fahrenheit(data.Observations[0].Imperial.Temperature),
 	}, nil
 }

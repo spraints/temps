@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
 )
 
@@ -23,7 +24,7 @@ type Temps struct {
 	secret  string
 	weather WeatherClient
 
-	outdoorTemp fahrenheit
+	outdoorTemp units.Temperature
 	sensors     sensorSlice
 	lock        sync.RWMutex
 }
@@ -32,12 +33,10 @@ type WeatherClient interface {
 	GetCurrentConditions(ctx context.Context) (*wu.Conditions, error)
 }
 
-type fahrenheit float64
-
 type sensor struct {
 	id          string
 	Name        string
-	Temperature fahrenheit
+	Temperature units.Temperature
 }
 
 func New(opts ...Option) *Temps {
@@ -63,7 +62,7 @@ func (t *Temps) Poll(ctx context.Context) {
 		if conditions, err := t.weather.GetCurrentConditions(ctx); err != nil {
 			log.Print(err)
 		} else {
-			log.Printf("OUTDOORS -> %.0f F", conditions.ImperialTemperature)
+			log.Printf("OUTDOORS -> %.0f F", conditions.Temperature)
 			t.setOutdoorTemp(conditions)
 		}
 
@@ -76,9 +75,9 @@ func (t *Temps) Poll(ctx context.Context) {
 }
 
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
-	renderer := renderShowTemplateFahrenheit
+	renderer := showHTML
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
-		renderer = renderShowText
+		renderer = showText
 	}
 
 	if err := renderer(w, t.getDataForShow()); err != nil {
@@ -87,9 +86,9 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func renderShowText(w io.Writer, temps []temp) error {
+func showText(w io.Writer, temps []temp) error {
 	for _, temp := range temps {
-		if _, err := fmt.Fprintf(w, "%-15s %.0f °F\n", temp.Label, temp.Temperature); err != nil {
+		if _, err := fmt.Fprintf(w, "%-15s %3.0f °F / %3.0f °C\n", temp.Label, temp.Temperature.Fahrenheit(), temp.Temperature.Celsius()); err != nil {
 			return err
 		}
 	}
@@ -114,11 +113,11 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[%s] (%s) -> %.0f F", id, name, temperature)
-	t.updateTagData(id, name, fahrenheit(temperature))
+	log.Printf("[%s] (%s) -> %.0f C", id, name, temperature)
+	t.updateTagData(id, name, units.Celsius(temperature))
 }
 
-func (t *Temps) updateTagData(id string, name string, temperature fahrenheit) {
+func (t *Temps) updateTagData(id string, name string, temperature units.Temperature) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -146,7 +145,7 @@ func (t *Temps) setOutdoorTemp(conditions *wu.Conditions) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	t.outdoorTemp = fahrenheit(conditions.ImperialTemperature)
+	t.outdoorTemp = conditions.Temperature
 }
 
 func (t *Temps) getDataForShow() []temp {
