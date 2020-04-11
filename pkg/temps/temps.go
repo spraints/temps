@@ -40,16 +40,19 @@ type sensor struct {
 	Temperature fahrenheit
 }
 
-func New(config Config) *Temps {
-	return &Temps{
-		secret:  config.Secret,
-		weather: wu.New(config.WundergroundAPIKey, config.WundergroundStationID),
+func New(opts ...Option) *Temps {
+	t := &Temps{}
+	for _, opt := range opts {
+		opt(t)
 	}
+	return t
 }
 
 func (t *Temps) Register(mux chi.Router) {
 	mux.Get("/", t.showTemps)
-	mux.Put("/mytaglist/{secret}/{uuid}", t.handleTagData)
+	if t.secret != "" {
+		mux.Put("/mytaglist/{secret}/{uuid}", t.handleTagData)
+	}
 }
 
 func (t *Temps) Poll(ctx context.Context) {

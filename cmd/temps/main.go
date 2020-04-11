@@ -15,11 +15,14 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/spraints/temps/pkg/temps"
+	"github.com/spraints/temps/pkg/wu"
 )
 
 type Config struct {
-	ListenAddr string `default:"127.0.0.1:8080" split_words:"true"`
-	temps.Config
+	ListenAddr            string `split_words:"true" default:"127.0.0.1:8080"`
+	TagListSecret         string `split_words:"true" required:"true"`
+	WundergroundAPIKey    string `split_words:"true" required:"true"`
+	WundergroundStationID string `split_words:"true" default:"KINKIRKL2"`
 }
 
 func main() {
@@ -32,7 +35,10 @@ func main() {
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, syscall.SIGINT, syscall.SIGTERM)
 
-	svc := temps.New(cfg.Config)
+	svc := temps.New(
+		temps.WithTagListSecret(cfg.TagListSecret),
+		temps.WithWU(wu.New(cfg.WundergroundAPIKey, cfg.WundergroundStationID)),
+	)
 
 	var shutdown sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
