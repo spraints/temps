@@ -23,9 +23,9 @@ const showTemplate = `
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
-    <table>{{range .}}
+    {{define "table"}}<table id="temp-table">{{range .}}
       <tr><th class="temp-label">{{.Label}}</th><td class="temp">{{.Temperature | f}}°F</td><td class="temp">{{.Temperature | c}}°C</tr>{{end}}
-    </table>
+    </table>{{end}}{{template "table" .}}
   </body>
 </html>
 `
@@ -43,6 +43,10 @@ type temp struct {
 	Temperature units.Temperature
 }
 
-func showHTML(w io.Writer, temps []temp) error {
-	return compiledShowTemplate.Execute(w, temps)
+func showHTML(w io.Writer, temps []temp, full bool) error {
+	template := "show"
+	if !full {
+		template = "table"
+	}
+	return compiledShowTemplate.ExecuteTemplate(w, template, temps)
 }

@@ -75,7 +75,7 @@ func (t *Temps) Poll(ctx context.Context) {
 }
 
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
-	renderer := showHTML
+	renderer := func(w io.Writer, temps []temp) error { return showHTML(w, temps, true) }
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
 		renderer = showText
 	}

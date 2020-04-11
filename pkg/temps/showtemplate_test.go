@@ -11,11 +11,11 @@ import (
 )
 
 func TestShowTemplate(t *testing.T) {
-	r := func(t *testing.T, label string, c float64) string {
+	r := func(t *testing.T, label string, celsius float64, full bool) string {
 		var b bytes.Buffer
 		if err := showHTML(&b, []temp{
-			{Label: label, Temperature: units.Celsius(c)},
-		}); err != nil {
+			{Label: label, Temperature: units.Celsius(celsius)},
+		}, full); err != nil {
 			require.NoError(t, err)
 		}
 		return b.String()
@@ -36,10 +36,14 @@ func TestShowTemplate(t *testing.T) {
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
-    <table>
+    <table id="temp-table">
       <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
     </table>
   </body>
 </html>
-`, r(t, "Example", 0))
+`, r(t, "Example", 0, true))
+
+	assert.Equal(t, `<table id="temp-table">
+      <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
+    </table>`, r(t, "Example", 0, false))
 }
