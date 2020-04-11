@@ -23,10 +23,8 @@ const showTemplate = `
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
-    <table>
-      {{range .}}
-      <tr><th class="temp-label">{{.Label}}</th><td class="temp">{{.Temperature | f}}°F</td><td class="temp">{{.Temperature | c}}°C</tr>
-      {{end}}
+    <table>{{range .}}
+      <tr><th class="temp-label">{{.Label}}</th><td class="temp">{{.Temperature | f}}°F</td><td class="temp">{{.Temperature | c}}°C</tr>{{end}}
     </table>
   </body>
 </html>
