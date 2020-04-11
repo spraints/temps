@@ -3,5 +3,6 @@
 . .env
 export TEMPS_TAG_LIST_SECRET
 export TEMPS_WUNDERGROUND_API_KEY
+export TEMPS_FAKE_OUTDOOR_TEMP=46.7
 
 exec go run ./cmd/temps

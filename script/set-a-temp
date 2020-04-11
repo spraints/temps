@@ -1,0 +1,15 @@
+#!/bin/bash
+#/ Usage: script/set-a-temp UUID NAME TEMP
+
+if [ $# -ne 3 ]; then
+  cat "$0" | grep ^#/ | cut -c4-
+  exit 1
+fi
+
+. .env
+
+UUID=$1
+NAME=$2
+TEMP=$3
+
+curl -i -X PUT -d "name=$NAME&temperature=$TEMP" http://127.0.0.1:8080/mytaglist/$TEMPS_TAG_LIST_SECRET/$UUID

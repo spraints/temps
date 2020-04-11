@@ -19,10 +19,11 @@ import (
 )
 
 type Config struct {
-	ListenAddr            string `split_words:"true" default:"127.0.0.1:8080"`
-	TagListSecret         string `split_words:"true" required:"true"`
-	WundergroundAPIKey    string `split_words:"true" required:"true"`
-	WundergroundStationID string `split_words:"true" default:"KINKIRKL2"`
+	ListenAddr            string  `split_words:"true" default:"127.0.0.1:8080"`
+	TagListSecret         string  `split_words:"true" required:"true"`
+	WundergroundAPIKey    string  `split_words:"true"`
+	WundergroundStationID string  `split_words:"true" default:"KINKIRKL2"`
+	FakeOutdoorTemp       float64 `split_words:"true"`
 }
 
 func main() {
@@ -35,9 +36,16 @@ func main() {
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, syscall.SIGINT, syscall.SIGTERM)
 
+	var weather temps.WeatherClient
+	if cfg.WundergroundAPIKey != "" && cfg.WundergroundStationID != "" {
+		weather = wu.New(cfg.WundergroundAPIKey, cfg.WundergroundStationID)
+	} else {
+		log.Printf("No weather underground API key or station ID was provided, using fixed outdoor temp (%.0f)", cfg.FakeOutdoorTemp)
+		weather = fakeWeather(cfg.FakeOutdoorTemp)
+	}
 	svc := temps.New(
 		temps.WithTagListSecret(cfg.TagListSecret),
-		temps.WithWU(wu.New(cfg.WundergroundAPIKey, cfg.WundergroundStationID)),
+		temps.WithWU(weather),
 	)
 
 	var shutdown sync.WaitGroup
@@ -101,4 +109,10 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 		}
 
 	}
+}
+
+type fakeWeather float64
+
+func (f fakeWeather) GetCurrentConditions(ctx context.Context) (*wu.Conditions, error) {
+	return &wu.Conditions{ImperialTemperature: float64(f)}, nil
 }
