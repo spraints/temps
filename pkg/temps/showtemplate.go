@@ -12,10 +12,13 @@ const showTemplate = `
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Temperatures around the farm</title>
     <style>
       .temp-label { text-align: left; }
       .temp { text-align: right; }
+      th, td { padding: 0.5em; }
+      body { font-size: x-large; font-family: sans-serif; }
     </style>
   </head>
   <body>
