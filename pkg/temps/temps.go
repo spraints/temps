@@ -81,21 +81,17 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		renderer = renderShowText
 	}
 
-	sensors, outdoor := t.getDataForShow()
-	if err := renderer(w, sensors, outdoor); err != nil {
+	if err := renderer(w, t.getDataForShow()); err != nil {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
 }
 
-func renderShowText(w io.Writer, sensors []sensor, outdoor fahrenheit) error {
-	show := func(label string, temp fahrenheit) {
-		fmt.Fprintf(w, "%15s %.0f °F\n", label, temp)
-	}
-
-	show("Outside", outdoor)
-	for _, sensor := range sensors {
-		show(sensor.Name, sensor.Temperature)
+func renderShowText(w io.Writer, temps []temp) error {
+	for _, temp := range temps {
+		if _, err := fmt.Fprintf(w, "%-15s %.0f °F\n", temp.Label, temp.Temperature); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -153,14 +149,16 @@ func (t *Temps) setOutdoorTemp(conditions *wu.Conditions) {
 	t.outdoorTemp = fahrenheit(conditions.ImperialTemperature)
 }
 
-func (t *Temps) getDataForShow() ([]sensor, fahrenheit) {
+func (t *Temps) getDataForShow() []temp {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	sensors := make([]sensor, 0, len(t.sensors))
+	temps := make([]temp, 0, 1+len(t.sensors))
+	temps = append(temps, temp{Label: "Outside", Temperature: t.outdoorTemp})
+
 	for _, sensor := range t.sensors {
-		sensors = append(sensors, *sensor)
+		temps = append(temps, temp{Label: sensor.Name, Temperature: sensor.Temperature})
 	}
 
-	return sensors, t.outdoorTemp
+	return temps
 }

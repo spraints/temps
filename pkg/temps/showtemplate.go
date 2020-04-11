@@ -14,9 +14,8 @@ const showTemplate = `
   <body>
     <h1>Temperatures (°F) around the farm</h1>
     <table>
-      <tr><th>Outside</th><td>{{.Outdoor}}°F</td></tr>
-      {{range .Sensors}}
-      <tr><th>{{.Name}}</th><td>{{.Temperature}}°F</td></tr>
+      {{range .}}
+      <tr><th>{{.Label}}</th><td>{{.Temperature}}°F</td></tr>
       {{end}}
     </table>
   </body>
@@ -25,13 +24,11 @@ const showTemplate = `
 
 var compiledShowTemplate *template.Template = template.Must(template.New("show").Parse(showTemplate))
 
-func renderShowTemplateFahrenheit(w io.Writer, sensors []sensor, outdoorTemp fahrenheit) error {
-	data := struct {
-		Sensors []sensor
-		Outdoor fahrenheit
-	}{
-		Sensors: sensors,
-		Outdoor: outdoorTemp,
-	}
-	return compiledShowTemplate.Execute(w, &data)
+type temp struct {
+	Label       string
+	Temperature fahrenheit
+}
+
+func renderShowTemplateFahrenheit(w io.Writer, temps []temp) error {
+	return compiledShowTemplate.Execute(w, temps)
 }
