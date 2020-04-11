@@ -62,7 +62,7 @@ func (t *Temps) Poll(ctx context.Context) {
 		if conditions, err := t.weather.GetCurrentConditions(ctx); err != nil {
 			log.Print(err)
 		} else {
-			log.Printf("OUTDOORS -> %.0f F", conditions.Temperature)
+			log.Printf("OUTDOORS -> %.2f F", conditions.Temperature)
 			t.setOutdoorTemp(conditions)
 		}
 
@@ -113,7 +113,7 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[%s] (%s) -> %.0f C", id, name, temperature)
+	log.Printf("[%s] (%s) -> %.3f C", id, name, temperature)
 	t.updateTagData(id, name, units.Celsius(temperature))
 }
 
