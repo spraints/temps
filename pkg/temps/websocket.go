@@ -18,25 +18,42 @@ type wsData struct {
 }
 
 func (t *Temps) runWS(ws *websocket.Conn) {
-	log.Printf("websocket accepted %v", ws.RemoteAddr())
+	remote := ws.RemoteAddr()
+	log.Printf("[%v] websocket accepted", remote)
 
 	defer ws.Close()
 
 	tick := time.NewTicker(wsUpdateInterval)
 	defer tick.Stop()
 
+	done := make(chan struct{})
+	defer close(done)
+	ws.SetCloseHandler(func(code int, text string) error {
+		log.Printf("[%v] websocket closed: %d %s", remote, code, text)
+		close(done)
+		return nil
+	})
+
 	lastSent := 0
-	for range tick.C {
+	for {
 		t.ws.lock.RLock()
 		if t.ws.serial > lastSent {
+			log.Printf("[%v] update to ws.serial = %d", remote, t.ws.serial)
 			lastSent = t.ws.serial
 			if err := ws.WriteMessage(websocket.TextMessage, t.ws.tempTable); err != nil {
-				log.Printf("error sending temps to websocket %v: %v", ws.RemoteAddr(), err)
+				log.Printf("[%v] error sending temps to websocket: %v", remote, err)
 				t.ws.lock.RUnlock()
 				return
 			}
 		}
 		t.ws.lock.RUnlock()
+
+		select {
+		case <-tick.C:
+			continue
+		case <-done:
+			return
+		}
 	}
 }
 
@@ -52,4 +69,5 @@ func (t *Temps) updateWSTemps() {
 
 	t.ws.serial = t.ws.serial + 1
 	t.ws.tempTable = buf.Bytes()
+	log.Printf("ws.serial = %d", t.ws.serial)
 }
