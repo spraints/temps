@@ -23,12 +23,25 @@ const showTemplate = `
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
-    {{define "table"}}<table id="temp-table">{{range .}}
-      <tr><th class="temp-label">{{.Label}}</th><td class="temp">{{.Temperature | f}}°F</td><td class="temp">{{.Temperature | c}}°C</tr>{{end}}
-    </table>{{end}}{{template "table" .}}
+    <div class="js-temp-table" {{.WSAttr}}>
+      {{define "table"}}<table>{{range .}}
+        <tr><th class="temp-label">{{.Label}}</th><td class="temp">{{.Temperature | f}}°F</td><td class="temp">{{.Temperature | c}}°C</tr>{{end}}
+      </table>{{end}}{{template "table" .Temps}}
+    </div>
+    <script defer type="text/javascript" src="/app.js" charset="utf-8"></script>
   </body>
 </html>
 `
+
+type showData struct {
+	WSAttr template.HTMLAttr
+	Temps  []temp
+}
+
+type temp struct {
+	Label       string
+	Temperature units.Temperature
+}
 
 var compiledShowTemplate *template.Template = func() *template.Template {
 	tempFuncs := map[string]interface{}{
@@ -38,15 +51,13 @@ var compiledShowTemplate *template.Template = func() *template.Template {
 	return template.Must(template.New("show").Funcs(tempFuncs).Parse(showTemplate))
 }()
 
-type temp struct {
-	Label       string
-	Temperature units.Temperature
+func showHTML(w io.Writer, wsURL string, temps []temp) error {
+	return compiledShowTemplate.Execute(w, &showData{
+		WSAttr: template.HTMLAttr("data-ws-url=\"" + wsURL + "\""),
+		Temps:  temps,
+	})
 }
 
-func showHTML(w io.Writer, temps []temp, full bool) error {
-	template := "show"
-	if !full {
-		template = "table"
-	}
-	return compiledShowTemplate.ExecuteTemplate(w, template, temps)
+func showFrag(w io.Writer, temps []temp) error {
+	return compiledShowTemplate.ExecuteTemplate(w, "table", temps)
 }

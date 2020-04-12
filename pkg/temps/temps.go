@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/gorilla/websocket"
 
 	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
@@ -27,6 +29,9 @@ type Temps struct {
 	outdoorTemp units.Temperature
 	sensors     sensorSlice
 	lock        sync.RWMutex
+
+	wsCond    *sync.Cond
+	tempTable []byte
 }
 
 type WeatherClient interface {
@@ -41,14 +46,19 @@ type sensor struct {
 
 func New(opts ...Option) *Temps {
 	t := &Temps{}
+	t.outdoorTemp = units.Fahrenheit(0)
 	for _, opt := range opts {
 		opt(t)
 	}
+	t.wsCond = sync.NewCond(&sync.Mutex{})
+	t.updateWSTemps()
 	return t
 }
 
 func (t *Temps) Register(mux chi.Router) {
+	registerStatic(mux)
 	mux.Get("/", t.showTemps)
+	mux.Get("/live", t.live)
 	if t.secret != "" {
 		mux.Put("/mytaglist/{secret}/{uuid}", t.handleTagData)
 	}
@@ -64,6 +74,7 @@ func (t *Temps) Poll(ctx context.Context) {
 		} else {
 			log.Printf("OUTDOORS -> %.2f F", conditions.Temperature)
 			t.setOutdoorTemp(conditions)
+			t.updateWSTemps()
 		}
 
 		select {
@@ -74,8 +85,19 @@ func (t *Temps) Poll(ctx context.Context) {
 	}
 }
 
+func (t *Temps) live(w http.ResponseWriter, r *http.Request) {
+	u := websocket.Upgrader{}
+	c, err := u.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("couldn't upgrade websocket connection: %v", err)
+		http.Error(w, "Error", 500)
+		return
+	}
+	t.runWS(c)
+}
+
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
-	renderer := func(w io.Writer, temps []temp) error { return showHTML(w, temps, true) }
+	renderer := func(w io.Writer, temps []temp) error { return showHTML(w, getWSURL(r), temps) }
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
 		renderer = showText
 	}
@@ -84,6 +106,14 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
+}
+
+func getWSURL(r *http.Request) string {
+	var wsURL url.URL
+	wsURL.Scheme = "ws"
+	wsURL.Host = r.Host
+	wsURL.Path = "/live"
+	return wsURL.String()
 }
 
 func showText(w io.Writer, temps []temp) error {
@@ -115,6 +145,7 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[%s] (%s) -> %.3f C", id, name, temperature)
 	t.updateTagData(id, name, units.Celsius(temperature))
+	t.updateWSTemps()
 }
 
 func (t *Temps) updateTagData(id string, name string, temperature units.Temperature) {

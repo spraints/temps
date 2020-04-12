@@ -10,17 +10,12 @@ import (
 	"github.com/spraints/temps/pkg/units"
 )
 
-func TestShowTemplate(t *testing.T) {
-	r := func(t *testing.T, label string, celsius float64, full bool) string {
-		var b bytes.Buffer
-		if err := showHTML(&b, []temp{
-			{Label: label, Temperature: units.Celsius(celsius)},
-		}, full); err != nil {
-			require.NoError(t, err)
-		}
-		return b.String()
+func TestShowHTML(t *testing.T) {
+	var buf bytes.Buffer
+	temps := []temp{
+		{Label: "Example", Temperature: units.Celsius(0)},
 	}
-
+	require.NoError(t, showHTML(&buf, "ws://thing/live", temps))
 	assert.Equal(t, `
 <!DOCTYPE html>
 <html>
@@ -36,14 +31,23 @@ func TestShowTemplate(t *testing.T) {
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
-    <table id="temp-table">
-      <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
-    </table>
+    <div class="js-temp-table" data-ws-url="ws://thing/live">
+      <table>
+        <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
+      </table>
+    </div>
+    <script defer type="text/javascript" src="/app.js" charset="utf-8"></script>
   </body>
 </html>
-`, r(t, "Example", 0, true))
+`, buf.String())
+}
 
-	assert.Equal(t, `<table id="temp-table">
-      <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
-    </table>`, r(t, "Example", 0, false))
+func TestShowFrag(t *testing.T) {
+	var buf bytes.Buffer
+	require.NoError(t, showFrag(&buf, []temp{
+		{Label: "Example", Temperature: units.Celsius(0)},
+	}))
+	assert.Equal(t, `<table>
+        <tr><th class="temp-label">Example</th><td class="temp">32°F</td><td class="temp">0°C</tr>
+      </table>`, buf.String())
 }
