@@ -30,8 +30,7 @@ type Temps struct {
 	sensors     sensorSlice
 	lock        sync.RWMutex
 
-	wsCond    *sync.Cond
-	tempTable []byte
+	ws wsData
 }
 
 type WeatherClient interface {
@@ -50,7 +49,6 @@ func New(opts ...Option) *Temps {
 	for _, opt := range opts {
 		opt(t)
 	}
-	t.wsCond = sync.NewCond(&sync.Mutex{})
 	t.updateWSTemps()
 	return t
 }

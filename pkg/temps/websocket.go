@@ -3,35 +3,46 @@ package temps
 import (
 	"bytes"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-func (t *Temps) runWS(ws *websocket.Conn) {
-	defer ws.Close()
-	if err := t.sendWSTemps(ws); err != nil {
-		log.Printf("unable to send temps on websocket start: %v", err)
-		return
-	}
+const wsUpdateInterval = 10 * time.Second
 
-	t.wsCond.L.Lock()
-	defer t.wsCond.L.Unlock()
-	for {
-		t.wsCond.Wait()
-		if err := t.sendWSTemps(ws); err != nil {
-			log.Printf("unable to send temp update: %v", err)
-			return
-		}
-	}
+type wsData struct {
+	lock      sync.RWMutex
+	serial    int
+	tempTable []byte
 }
 
-func (t *Temps) sendWSTemps(ws *websocket.Conn) error {
-	return ws.WriteMessage(websocket.TextMessage, t.tempTable)
+func (t *Temps) runWS(ws *websocket.Conn) {
+	log.Printf("websocket accepted %v", ws.RemoteAddr())
+
+	defer ws.Close()
+
+	tick := time.NewTicker(wsUpdateInterval)
+	defer tick.Stop()
+
+	lastSent := 0
+	for range tick.C {
+		t.ws.lock.RLock()
+		if t.ws.serial > lastSent {
+			lastSent = t.ws.serial
+			if err := ws.WriteMessage(websocket.TextMessage, t.ws.tempTable); err != nil {
+				log.Printf("error sending temps to websocket %v: %v", ws.RemoteAddr(), err)
+				t.ws.lock.RUnlock()
+				return
+			}
+		}
+		t.ws.lock.RUnlock()
+	}
 }
 
 func (t *Temps) updateWSTemps() {
-	t.wsCond.L.Lock()
-	defer t.wsCond.L.Unlock()
+	t.ws.lock.Lock()
+	defer t.ws.lock.Unlock()
 
 	var buf bytes.Buffer
 	if err := showFrag(&buf, t.getDataForShow()); err != nil {
@@ -39,6 +50,6 @@ func (t *Temps) updateWSTemps() {
 		return
 	}
 
-	t.tempTable = buf.Bytes()
-	t.wsCond.Broadcast()
+	t.ws.serial = t.ws.serial + 1
+	t.ws.tempTable = buf.Bytes()
 }
