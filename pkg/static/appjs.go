@@ -1,12 +1,8 @@
-package temps
+package static
 
-import (
-	"net/http"
+const AppJS = "/app.js"
 
-	"github.com/go-chi/chi"
-)
-
-var appJS = `
+const appJS = `
 function initWS() {
   if (!window.WebSocket) { return }
   var tempTable = document.querySelector('.js-temp-table')
@@ -22,7 +18,7 @@ function startWS(wsURL, tempTable) {
   console.log("opening " + wsURL)
   ws = new WebSocket(wsURL)
   ws.onmessage = function(event) {
-    console.log("WS UPDATE")
+    console.log(["WS UPDATE", event])
     tempTable.innerHTML = event.data
   }
   var restart = function() {
@@ -41,13 +37,3 @@ function startWS(wsURL, tempTable) {
 
 initWS()
 `
-
-func registerStatic(mux chi.Router) {
-	static := func(path string, contentType string, content []byte) {
-		mux.Get(path, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", contentType)
-			w.Write(content)
-		})
-	}
-	static("/app.js", "text/javascript", []byte(appJS))
-}

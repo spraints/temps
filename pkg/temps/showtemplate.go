@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/spraints/temps/pkg/static"
 	"github.com/spraints/temps/pkg/units"
 )
 
@@ -50,7 +51,7 @@ const showTemplate = `
         </tr>{{end}}
       </table>{{end}}{{template "table" .Temps}}
     </div>
-    <script defer type="text/javascript" src="/app.js" charset="utf-8"></script>
+    <script defer type="text/javascript" src="` + static.AppJS + `" charset="utf-8"></script>
   </body>
 </html>
 `
