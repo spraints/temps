@@ -88,7 +88,6 @@ func (t *Temps) live(w http.ResponseWriter, r *http.Request) {
 	c, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("couldn't upgrade websocket connection: %v", err)
-		http.Error(w, "Error", 500)
 		return
 	}
 	t.runWS(c)
