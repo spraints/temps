@@ -45,6 +45,13 @@ func (t *Temps) runWS(ws *websocket.Conn) {
 				t.ws.lock.RUnlock()
 				return
 			}
+		} else {
+			// nginx times out after 60s of idleness.
+			if err := ws.WriteMessage(websocket.PingMessage, []byte("")); err != nil {
+				log.Printf("[%v] error sending ping to websocket: %v", remote, err)
+				t.ws.lock.RUnlock()
+				return
+			}
 		}
 		t.ws.lock.RUnlock()
 
