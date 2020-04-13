@@ -18,4 +18,5 @@ func (Static) Register(mux chi.Router) {
 		})
 	}
 	static(AppJS, "text/javascript", []byte(appJS))
+	static(AppCSS, "text/css", []byte(appCSS))
 }
