@@ -12,6 +12,11 @@ const appCSS = `
 .temp-date {
   color: #ccc;
 }
+@media only screen and (max-width: 580px) {
+  .temp-date {
+    display: none;
+  }
+}
 th, td {
   padding: 0.5em;
 }
