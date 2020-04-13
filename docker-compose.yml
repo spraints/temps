@@ -1,0 +1,18 @@
+version: '3.4'
+
+services:
+  temps:
+    build:
+      context: .
+    environment:
+      - "TEMPS_FAKE_OUTDOOR_TEMP=46.7"
+      - "TEMPS_TAG_LIST_SECRET=dev"
+
+  nginx:
+    image: nginx:1.15.8
+    volumes:
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - '8080:8080'
+    depends_on:
+      - temps

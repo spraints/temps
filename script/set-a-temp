@@ -6,7 +6,8 @@ if [ $# -ne 3 ]; then
   exit 1
 fi
 
-. .env
+# Keep in sync with docker-compose.yml
+TEMPS_TAG_LIST_SECRET=dev
 
 UUID=$1
 NAME=$2
