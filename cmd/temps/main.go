@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 
+	"github.com/spraints/temps/pkg/static"
 	"github.com/spraints/temps/pkg/temps"
 	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
@@ -52,7 +53,7 @@ func main() {
 	var shutdown sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	run(ctx, &shutdown, "poll current temperature", svc.Poll)
-	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc))
+	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc, static.Svc))
 	<-stopSignal
 	cancel()
 	wait(10*time.Second, &shutdown)

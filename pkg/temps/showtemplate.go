@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/spraints/temps/pkg/static"
 	"github.com/spraints/temps/pkg/units"
 )
 
@@ -25,18 +26,7 @@ const showTemplate = `
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Temperatures around the farm</title>
-    <style>
-      .temp-label { text-align: left; }
-      .temp { text-align: right; }
-      .temp-date { color: #ccc; }
-      th, td { padding: 0.5em; }
-      body {
-        background-color: white;
-        color: black;
-        font-size: x-large;
-        font-family: sans-serif;
-      }
-    </style>
+    <link media="all" rel="stylesheet" href="` + static.AppCSS + `">
   </head>
   <body>
     <h1>Temperatures around the farm</h1>
@@ -50,7 +40,7 @@ const showTemplate = `
         </tr>{{end}}
       </table>{{end}}{{template "table" .Temps}}
     </div>
-    <script defer type="text/javascript" src="/app.js" charset="utf-8"></script>
+    <script defer type="text/javascript" src="` + static.AppJS + `" charset="utf-8"></script>
   </body>
 </html>
 `

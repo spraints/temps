@@ -58,7 +58,6 @@ func New(opts ...Option) *Temps {
 }
 
 func (t *Temps) Register(mux chi.Router) {
-	registerStatic(mux)
 	mux.Get("/", t.showTemps)
 	mux.Get("/live", t.live)
 	if t.secret != "" {
