@@ -14,7 +14,7 @@ var formatDate = func() func(t time.Time) string {
 		panic(err)
 	} else {
 		return func(t time.Time) string {
-			return t.In(tz).Format("15:04 (2-Jan-2006) MST")
+			return t.In(tz).Format("15:04 2-Jan-2006 MST")
 		}
 	}
 }()

@@ -119,11 +119,11 @@ func getWSURL(r *http.Request) string {
 
 func showText(w io.Writer, temps []temp) error {
 	for _, temp := range temps {
-		if _, err := fmt.Fprintf(w, "%-15s (%s) %3.0f °F / %3.0f °C\n",
-			formatDate(temp.UpdatedAt),
+		if _, err := fmt.Fprintf(w, "%-15s  %3.0f °F / %3.0f °C   %s\n",
 			temp.Label,
 			temp.Temperature.Fahrenheit(),
 			temp.Temperature.Celsius(),
+			formatDate(temp.UpdatedAt),
 		); err != nil {
 			return err
 		}

@@ -44,7 +44,7 @@ func TestShowHTML(t *testing.T) {
           <th class="temp-label">Example</th>
           <td class="temp">32°F</td>
           <td class="temp">0°C</td>
-          <td class="temp-date">14:47 (13-Apr-2020) EDT</td>
+          <td class="temp-date">14:47 13-Apr-2020 EDT</td>
         </tr>
       </table>
     </div>
@@ -64,7 +64,7 @@ func TestShowFrag(t *testing.T) {
           <th class="temp-label">Example</th>
           <td class="temp">32°F</td>
           <td class="temp">0°C</td>
-          <td class="temp-date">14:47 (13-Apr-2020) EDT</td>
+          <td class="temp-date">14:47 13-Apr-2020 EDT</td>
         </tr>
       </table>`, buf.String())
 }
