@@ -1,8 +1,7 @@
 #!/bin/bash
 
-. .env
-export TEMPS_TAG_LIST_SECRET
-export TEMPS_WUNDERGROUND_API_KEY
-export TEMPS_FAKE_OUTDOOR_TEMP=46.7
+set -e
+set -o nounset
 
-exec go run ./cmd/temps
+docker-compose build temps
+exec docker-compose up
