@@ -163,6 +163,7 @@ func (t *Temps) updateTagData(id string, name string, temperature units.Temperat
 				sensor.Name = name
 			}
 			sensor.Temperature = temperature
+			sensor.UpdatedAt = t.now()
 			return
 		}
 	}
