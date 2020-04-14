@@ -13,4 +13,4 @@ UUID=$1
 NAME=$2
 TEMP=$3
 
-curl -i -X PUT -d "name=$NAME&temperature=$TEMP" http://127.0.0.1:8080/mytaglist/$TEMPS_TAG_LIST_SECRET/$UUID
+curl -i -X PUT -d "name=$NAME&temperature=$TEMP" http://127.0.0.1:8070/mytaglist/$TEMPS_TAG_LIST_SECRET/$UUID

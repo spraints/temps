@@ -13,6 +13,6 @@ services:
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
     ports:
-      - '8080:8080'
+      - '8070:8070'
     depends_on:
       - temps
