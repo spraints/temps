@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "devDependencies": [
+    "rollup"
+  ],
+  "dependencies": [
+    "broadcast-channel"
+  ]
+}
