@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 
+	"github.com/spraints/temps/pkg/templates"
 	"github.com/spraints/temps/pkg/temps"
 	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
@@ -26,7 +27,9 @@ type Config struct {
 	WundergroundStationID string  `split_words:"true" default:"KINKIRKL2"`
 	FakeOutdoorTemp       float64 `split_words:"true"`
 
-	PublicPath string `split_words:"true" default:"public"`
+	PublicPath      string `split_words:"true" default:"public"`
+	TemplatesPath   string `split_words:"true" default:"templates"`
+	ReloadTemplates bool   `split_words:"true" default:"false"`
 }
 
 func main() {
@@ -47,8 +50,9 @@ func main() {
 		weather = fakeWeather(cfg.FakeOutdoorTemp)
 	}
 	svc := temps.New(
+		weather,
+		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates),
 		temps.WithTagListSecret(cfg.TagListSecret),
-		temps.WithWU(weather),
 	)
 
 	var shutdown sync.WaitGroup

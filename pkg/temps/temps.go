@@ -2,8 +2,7 @@ package temps
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 
+	"github.com/spraints/temps/pkg/templates"
 	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
 )
@@ -23,9 +23,11 @@ import (
 const temperatureUpdateInterval = 10 * time.Minute
 
 type Temps struct {
-	secret  string
-	weather WeatherClient
-	now     func() time.Time
+	secret string
+	now    func() time.Time
+
+	weather   WeatherClient
+	templates TemplateLoader
 
 	lock          sync.RWMutex
 	outdoorTemp   units.Temperature
@@ -39,6 +41,10 @@ type WeatherClient interface {
 	GetCurrentConditions(ctx context.Context) (*wu.Conditions, error)
 }
 
+type TemplateLoader interface {
+	Get(path string) templates.Template
+}
+
 type sensor struct {
 	id          string
 	Name        string
@@ -46,9 +52,11 @@ type sensor struct {
 	UpdatedAt   time.Time
 }
 
-func New(opts ...Option) *Temps {
+func New(weather WeatherClient, templates TemplateLoader, opts ...Option) *Temps {
 	t := &Temps{}
 	t.outdoorTemp = units.Fahrenheit(0)
+	t.weather = weather
+	t.templates = templates
 	t.now = time.Now
 	for _, opt := range opts {
 		opt(t)
@@ -96,13 +104,27 @@ func (t *Temps) live(w http.ResponseWriter, r *http.Request) {
 	t.runWS(c)
 }
 
-func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
-	renderer := func(w io.Writer, temps []temp) error { return showHTML(w, getWSURL(r), temps) }
-	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
-		renderer = showText
-	}
+type showData struct {
+	WSAttr template.HTMLAttr
+	Temps  []temp
+}
 
-	if err := renderer(w, t.getDataForShow()); err != nil {
+type temp struct {
+	Label       string
+	Temperature units.Temperature
+	UpdatedAt   time.Time
+}
+
+func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
+	data := &showData{
+		WSAttr: template.HTMLAttr("data-ws-url=\"" + getWSURL(r) + "\""),
+		Temps:  t.getDataForShow(),
+	}
+	tmpl := "show.html.tmpl"
+	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
+		tmpl = "show.text.tmpl"
+	}
+	if err := t.templates.Get(tmpl).Execute(w, data); err != nil {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
@@ -114,21 +136,6 @@ func getWSURL(r *http.Request) string {
 	wsURL.Host = r.Host
 	wsURL.Path = "/live"
 	return wsURL.String()
-}
-
-func showText(w io.Writer, temps []temp) error {
-	for _, temp := range temps {
-		if _, err := fmt.Fprintf(w, "%-15s  %3.0f °F / %3.0f °C   %s\n",
-			temp.Label,
-			temp.Temperature.Fahrenheit(),
-			temp.Temperature.Celsius(),
-			formatDate(temp.UpdatedAt),
-		); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
