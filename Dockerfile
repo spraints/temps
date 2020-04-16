@@ -14,7 +14,8 @@ COPY package.json .
 COPY package-lock.json .
 RUN npm install
 COPY script/rollup script/rollup
-COPY assets .
+COPY rollup.config.js .
+COPY assets assets
 RUN script/rollup
 
 FROM golang:1.14.1
