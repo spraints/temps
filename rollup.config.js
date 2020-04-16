@@ -4,7 +4,7 @@ import commonjs from '@rollup/plugin-commonjs'
 export default {
   input: 'assets/main.js',
   output: {
-    file: 'public/app2.js',
+    file: 'public/app.js',
     format: 'iife'
   },
   plugins: [ resolve(), commonjs() ]

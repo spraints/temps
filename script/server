@@ -3,5 +3,6 @@
 set -e
 set -o nounset
 
+script/rollup
 docker-compose build temps
 exec docker-compose up
