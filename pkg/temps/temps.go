@@ -2,7 +2,6 @@ package temps
 
 import (
 	"context"
-	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -105,8 +104,7 @@ func (t *Temps) live(w http.ResponseWriter, r *http.Request) {
 }
 
 type showData struct {
-	WSAttr template.HTMLAttr
-	Temps  []temp
+	Temps []temp
 }
 
 type temp struct {
@@ -117,8 +115,7 @@ type temp struct {
 
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 	data := &showData{
-		WSAttr: template.HTMLAttr("data-ws-url=\"" + getWSURL(r) + "\""),
-		Temps:  t.getDataForShow(),
+		Temps: t.getDataForShow(),
 	}
 	tmpl := "show.html.tmpl"
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {

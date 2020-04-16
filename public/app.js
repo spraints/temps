@@ -2,9 +2,13 @@ function initWS() {
   if (!window.WebSocket) { return }
   var tempTable = document.querySelector('.js-temp-table')
   if (!tempTable) { return }
-  var wsURL = tempTable.getAttribute('data-ws-url')
-  if (!wsURL) { return }
-  startWS(wsURL, tempTable)
+  startWS(buildWSURL(), tempTable)
+}
+
+function buildWSURL() {
+  var host = location.host
+  var protocol = location.protocol.replace("http", "ws")
+  return `${protocol}//${host}/live`
 }
 
 var restartTO = null
