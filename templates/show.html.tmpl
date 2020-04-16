@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Temperatures around the farm</title>
+    <link media="all" rel="stylesheet" href="/app.css">
+  </head>
+  <body>
+    <h1>Temperatures around the farm</h1>
+    <div class="js-temp-table">
+      {{define "table"}}<table>{{range .}}
+        <tr>
+          <th class="temp-label">{{.Label}}</th>
+          <td class="temp">{{.Temperature | f}}°F</td>
+          <td class="temp">{{.Temperature | c}}°C</td>
+          <td class="temp-date">{{.UpdatedAt | t}}</td>
+        </tr>{{end}}
+      </table>{{end}}{{template "table" .Temps}}
+    </div>
+    <script defer type="text/javascript" src="/app.js" charset="utf-8"></script>
+  </body>
+</html>

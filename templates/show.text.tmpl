@@ -1,0 +1,2 @@
+{{range .Temps}}{{.Label | printf "%-15s"}}  {{.Temperature | f}} °F / {{.Temperature | c}} °C   {{.UpdatedAt | t}}
+{{end -}}

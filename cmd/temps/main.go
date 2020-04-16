@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/spraints/temps/pkg/static"
+	"github.com/spraints/temps/pkg/templates"
 	"github.com/spraints/temps/pkg/temps"
 	"github.com/spraints/temps/pkg/units"
 	"github.com/spraints/temps/pkg/wu"
@@ -26,6 +26,10 @@ type Config struct {
 	WundergroundAPIKey    string  `split_words:"true"`
 	WundergroundStationID string  `split_words:"true" default:"KINKIRKL2"`
 	FakeOutdoorTemp       float64 `split_words:"true"`
+
+	PublicPath      string `split_words:"true" default:"public"`
+	TemplatesPath   string `split_words:"true" default:"templates"`
+	ReloadTemplates bool   `split_words:"true" default:"false"`
 }
 
 func main() {
@@ -46,14 +50,15 @@ func main() {
 		weather = fakeWeather(cfg.FakeOutdoorTemp)
 	}
 	svc := temps.New(
+		weather,
+		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates),
 		temps.WithTagListSecret(cfg.TagListSecret),
-		temps.WithWU(weather),
 	)
 
 	var shutdown sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	run(ctx, &shutdown, "poll current temperature", svc.Poll)
-	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc, static.Svc))
+	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc))
 	<-stopSignal
 	cancel()
 	wait(10*time.Second, &shutdown)
@@ -93,6 +98,7 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 	for _, svc := range services {
 		svc.Register(mux)
 	}
+	mux.Mount("/", http.FileServer(http.Dir(cfg.PublicPath)))
 
 	server := http.Server{
 		Addr:    cfg.ListenAddr,

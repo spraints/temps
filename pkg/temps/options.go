@@ -7,9 +7,3 @@ func WithTagListSecret(secret string) Option {
 		t.secret = secret
 	}
 }
-
-func WithWU(weather WeatherClient) Option {
-	return func(t *Temps) {
-		t.weather = weather
-	}
-}

@@ -69,7 +69,7 @@ func (t *Temps) updateWSTemps() {
 	defer t.ws.lock.Unlock()
 
 	var buf bytes.Buffer
-	if err := showFrag(&buf, t.getDataForShow()); err != nil {
+	if err := t.templates.Get("show.html.tmpl").ExecuteTemplate(&buf, "table", t.getDataForShow()); err != nil {
 		log.Printf("error updating table for websockets: %v", err)
 		return
 	}
