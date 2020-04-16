@@ -1,8 +1,3 @@
-package static
-
-const AppJS = "/app.js"
-
-const appJS = `
 function initWS() {
   if (!window.WebSocket) { return }
   var tempTable = document.querySelector('.js-temp-table')
@@ -36,4 +31,3 @@ function startWS(wsURL, tempTable) {
 }
 
 initWS()
-`

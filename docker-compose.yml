@@ -7,6 +7,9 @@ services:
     environment:
       - "TEMPS_FAKE_OUTDOOR_TEMP=46.7"
       - "TEMPS_TAG_LIST_SECRET=dev"
+      - "TEMPS_PUBLIC_PATH=/live/public"
+    volumes:
+      - ./public:/live/public
 
   nginx:
     image: nginx:1.15.8
