@@ -1,8 +1,6 @@
 package temps
 
 import (
-	"log"
-
 	"github.com/spraints/temps/pkg/types"
 )
 
