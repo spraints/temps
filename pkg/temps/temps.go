@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -130,14 +129,6 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
-}
-
-func getWSURL(r *http.Request) string {
-	var wsURL url.URL
-	wsURL.Scheme = "ws"
-	wsURL.Host = r.Host
-	wsURL.Path = "/live"
-	return wsURL.String()
 }
 
 func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
