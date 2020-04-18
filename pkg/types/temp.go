@@ -1,4 +1,4 @@
-package units
+package types
 
 type Temperature interface {
 	Celsius() Celsius

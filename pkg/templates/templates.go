@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spraints/temps/pkg/reloadabletemplate"
-	"github.com/spraints/temps/pkg/units"
+	"github.com/spraints/temps/pkg/types"
 )
 
 type Template interface {
@@ -39,8 +39,8 @@ func mkfact() func(name string) *template.Template {
 	}
 
 	funcs := map[string]interface{}{
-		"c": func(t units.Temperature) string { return fmt.Sprintf("%0.0f", t.Celsius()) },
-		"f": func(t units.Temperature) string { return fmt.Sprintf("%0.0f", t.Fahrenheit()) },
+		"c": func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Celsius()) },
+		"f": func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Fahrenheit()) },
 		"t": func(t time.Time) string { return t.In(tz).Format("15:04 2-Jan-2006 MST") },
 	}
 
