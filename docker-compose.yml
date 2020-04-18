@@ -4,6 +4,7 @@ services:
   temps:
     build:
       context: .
+      #?? target: build
     environment:
       - "TEMPS_FAKE_OUTDOOR_TEMP=46.7"
       - "TEMPS_TAG_LIST_SECRET=dev"
