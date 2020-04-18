@@ -37,13 +37,16 @@ function startWS(wsURL, tempTable, updates) {
 
 var tempTable = document.querySelector('.js-temp-table')
 if (tempTable) {
-  const tmtyl = new BroadcastChannel('tmtyl')
-  const updates = new BroadcastChannel('temps')
+  const chan = new BroadcastChannel('temps')
+  window.chan = chan
 
-  const elector = createLeaderElection(tmtyl)
-  elector.awaitLeadership().then(() => { initWS(tempTable, updates) })
+  const elector = createLeaderElection(chan)
+  elector.awaitLeadership().then(() => {
+    document.title = document.title + " - LEADER w timeout"
+    setTimeout(() => initWS(tempTable, chan), 10)
+  })
 
-  updates.onmessage = function(msg) {
+  chan.onmessage = function(msg) {
     console.log("update received from leader")
     tempTable.innerHTML = msg
   }
