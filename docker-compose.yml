@@ -10,9 +10,11 @@ services:
       - "TEMPS_PUBLIC_PATH=/live/public"
       - "TEMPS_TEMPLATES_PATH=/live/templates"
       - "TEMPS_RELOAD_TEMPLATES=true"
+      - "TEMPS_DATA_DIR=/data/temps"
     volumes:
       - ./public:/live/public
       - ./templates:/live/templates
+      - temps_data:/data/temps
 
   nginx:
     image: nginx:1.15.8
@@ -22,3 +24,6 @@ services:
       - '8070:8070'
     depends_on:
       - temps
+
+volumes:
+  temps_data:

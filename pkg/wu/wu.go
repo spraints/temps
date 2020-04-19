@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/spraints/temps/pkg/units"
+	"github.com/spraints/temps/pkg/types"
 )
 
 type Client struct {
@@ -25,7 +25,7 @@ func New(apiToken string, stationID string) *Client {
 }
 
 type Conditions struct {
-	Temperature units.Temperature
+	Temperature types.Temperature
 }
 
 func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) {
@@ -61,6 +61,6 @@ func (c *Client) GetCurrentConditions(ctx context.Context) (*Conditions, error) 
 		return nil, fmt.Errorf("no observations!")
 	}
 	return &Conditions{
-		Temperature: units.Fahrenheit(data.Observations[0].Imperial.Temperature),
+		Temperature: types.Fahrenheit(data.Observations[0].Imperial.Temperature),
 	}, nil
 }

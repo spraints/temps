@@ -4,34 +4,31 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 
 	"github.com/spraints/temps/pkg/templates"
-	"github.com/spraints/temps/pkg/units"
+	"github.com/spraints/temps/pkg/types"
 	"github.com/spraints/temps/pkg/wu"
 )
 
-const temperatureUpdateInterval = 10 * time.Minute
+const (
+	temperatureUpdateInterval = 10 * time.Minute
+	outsideID                 = "outside"
+)
 
 type Temps struct {
 	secret string
 	now    func() time.Time
 
 	weather   WeatherClient
+	store     Store
 	templates TemplateLoader
-
-	lock          sync.RWMutex
-	outdoorTemp   units.Temperature
-	outdoorTempAt time.Time
-	sensors       sensorSlice
 
 	ws wsData
 }
@@ -40,21 +37,19 @@ type WeatherClient interface {
 	GetCurrentConditions(ctx context.Context) (*wu.Conditions, error)
 }
 
+type Store interface {
+	All() ([]types.Measurement, error)
+	Put(types.Measurement) error
+}
+
 type TemplateLoader interface {
 	Get(path string) templates.Template
 }
 
-type sensor struct {
-	id          string
-	Name        string
-	Temperature units.Temperature
-	UpdatedAt   time.Time
-}
-
-func New(weather WeatherClient, templates TemplateLoader, opts ...Option) *Temps {
+func New(weather WeatherClient, store Store, templates TemplateLoader, opts ...Option) *Temps {
 	t := &Temps{}
-	t.outdoorTemp = units.Fahrenheit(0)
 	t.weather = weather
+	t.store = store
 	t.templates = templates
 	t.now = time.Now
 	for _, opt := range opts {
@@ -81,8 +76,16 @@ func (t *Temps) Poll(ctx context.Context) {
 			log.Print(err)
 		} else {
 			log.Printf("OUTDOORS -> %.2f F", conditions.Temperature)
-			t.setOutdoorTemp(conditions)
-			t.updateWSTemps()
+			if err := t.store.Put(types.Measurement{
+				ID:          outsideID,
+				Name:        "Outdoors",
+				Temperature: conditions.Temperature,
+				MeasuredAt:  t.now(),
+			}); err != nil {
+				log.Printf("error: %v", err)
+			} else {
+				t.updateWSTemps()
+			}
 		}
 
 		select {
@@ -109,7 +112,7 @@ type showData struct {
 
 type temp struct {
 	Label       string
-	Temperature units.Temperature
+	Temperature types.Temperature
 	UpdatedAt   time.Time
 }
 
@@ -120,19 +123,12 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 	tmpl := "show.html.tmpl"
 	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
 		tmpl = "show.text.tmpl"
+		w.Header().Set("Content-Type", "text/plain")
 	}
 	if err := t.templates.Get(tmpl).Execute(w, data); err != nil {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
-}
-
-func getWSURL(r *http.Request) string {
-	var wsURL url.URL
-	wsURL.Scheme = "ws"
-	wsURL.Host = r.Host
-	wsURL.Path = "/live"
-	return wsURL.String()
 }
 
 func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
@@ -153,53 +149,35 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[%s] (%s) -> %.3f C", id, name, temperature)
-	t.updateTagData(id, name, units.Celsius(temperature))
-	t.updateWSTemps()
-}
-
-func (t *Temps) updateTagData(id string, name string, temperature units.Temperature) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	for _, sensor := range t.sensors {
-		if sensor.id == id {
-			if name != "" {
-				sensor.Name = name
-			}
-			sensor.Temperature = temperature
-			sensor.UpdatedAt = t.now()
-			return
-		}
-	}
-
-	sensor := &sensor{
-		id:          id,
+	if err := t.store.Put(types.Measurement{
+		ID:          "wirelesstag-" + id,
 		Name:        name,
-		Temperature: temperature,
-		UpdatedAt:   t.now(),
+		Temperature: types.Celsius(temperature),
+		MeasuredAt:  t.now(),
+	}); err != nil {
+		log.Printf("error: %v", err)
+	} else {
+		t.updateWSTemps()
 	}
-
-	t.sensors = append(t.sensors, sensor)
-	sort.Sort(t.sensors)
-}
-
-func (t *Temps) setOutdoorTemp(conditions *wu.Conditions) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	t.outdoorTemp = conditions.Temperature
-	t.outdoorTempAt = t.now()
 }
 
 func (t *Temps) getDataForShow() []temp {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
+	m, err := t.store.All()
+	if err != nil {
+		log.Printf("error getting values: %v", err)
+		return nil
+	}
+	n := sensorSlice(m)
+	sort.Sort(n)
 
-	temps := make([]temp, 0, 1+len(t.sensors))
-	temps = append(temps, temp{Label: "Outside", Temperature: t.outdoorTemp, UpdatedAt: t.outdoorTempAt})
-
-	for _, sensor := range t.sensors {
-		temps = append(temps, temp{Label: sensor.Name, Temperature: sensor.Temperature, UpdatedAt: sensor.UpdatedAt})
+	temps := make([]temp, 0, len(n))
+	for _, sensor := range n {
+		log.Printf(">> %q", sensor.ID)
+		temps = append(temps, temp{
+			Label:       sensor.Name,
+			Temperature: sensor.Temperature,
+			UpdatedAt:   sensor.MeasuredAt,
+		})
 	}
 
 	return temps

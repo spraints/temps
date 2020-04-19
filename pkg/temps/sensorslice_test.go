@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/spraints/temps/pkg/types"
 )
 
 func TestSortableSensors(t *testing.T) {
@@ -12,15 +14,18 @@ func TestSortableSensors(t *testing.T) {
 	sort.Sort(slice)
 	assert.Equal(t, sensorSlice(nil), slice)
 
-	slice = sensorSlice([]*sensor{
-		{Name: "C"},
-		{Name: "A"},
-		{Name: "B"},
+	slice = sensorSlice([]types.Measurement{
+		{Name: "C", ID: "01"},
+		{Name: "A", ID: "zzyy"},
+		{Name: "B", ID: "ab"},
+		{Name: "Z", ID: outsideID},
 	})
 	sort.Sort(slice)
-	assert.Equal(t, sensorSlice([]*sensor{
-		{Name: "A"},
-		{Name: "B"},
-		{Name: "C"},
+	// outsideID should be first, other IDs shouldn't matter.
+	assert.Equal(t, sensorSlice([]types.Measurement{
+		{Name: "Z", ID: outsideID},
+		{Name: "A", ID: "zzyy"},
+		{Name: "B", ID: "ab"},
+		{Name: "C", ID: "01"},
 	}), slice)
 }

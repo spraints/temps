@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"sync"
 	"syscall"
 	"time"
@@ -14,9 +15,11 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 
+	"github.com/spraints/temps/pkg/filestore"
+	"github.com/spraints/temps/pkg/memorystore"
 	"github.com/spraints/temps/pkg/templates"
 	"github.com/spraints/temps/pkg/temps"
-	"github.com/spraints/temps/pkg/units"
+	"github.com/spraints/temps/pkg/types"
 	"github.com/spraints/temps/pkg/wu"
 )
 
@@ -30,6 +33,8 @@ type Config struct {
 	PublicPath      string `split_words:"true" default:"public"`
 	TemplatesPath   string `split_words:"true" default:"templates"`
 	ReloadTemplates bool   `split_words:"true" default:"false"`
+
+	DataDir string `split_words:"true"`
 }
 
 func main() {
@@ -49,8 +54,17 @@ func main() {
 		log.Printf("No weather underground API key or station ID was provided, using fixed outdoor temp (%.0f)", cfg.FakeOutdoorTemp)
 		weather = fakeWeather(cfg.FakeOutdoorTemp)
 	}
+
+	var store temps.Store
+	if cfg.DataDir != "" {
+		store = filestore.New(path.Join(cfg.DataDir, "temps.json"))
+	} else {
+		store = memorystore.New()
+	}
+
 	svc := temps.New(
 		weather,
+		store,
 		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates),
 		temps.WithTagListSecret(cfg.TagListSecret),
 	)
@@ -122,5 +136,5 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 type fakeWeather float64
 
 func (f fakeWeather) GetCurrentConditions(ctx context.Context) (*wu.Conditions, error) {
-	return &wu.Conditions{Temperature: units.Fahrenheit(f)}, nil
+	return &wu.Conditions{Temperature: types.Fahrenheit(f)}, nil
 }
