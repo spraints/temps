@@ -116,7 +116,7 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 
 	server := http.Server{
 		Addr:    cfg.ListenAddr,
-		Handler: mux,
+		Handler: logRequests(mux),
 	}
 
 	return func(ctx context.Context) {
@@ -131,6 +131,13 @@ func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
 		}
 
 	}
+}
+
+func logRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("method=%s host=%s path=%s content_length=%d", r.Method, r.Host, r.URL.String(), r.ContentLength)
+		next.ServeHTTP(w, r)
+	})
 }
 
 type fakeWeather float64
