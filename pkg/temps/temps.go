@@ -55,7 +55,7 @@ func New(weather WeatherClient, store Store, templates TemplateLoader, opts ...O
 	for _, opt := range opts {
 		opt(t)
 	}
-	t.updateWSTemps()
+	t.initWS()
 	return t
 }
 
@@ -76,15 +76,16 @@ func (t *Temps) Poll(ctx context.Context) {
 			log.Print(err)
 		} else {
 			log.Printf("OUTDOORS -> %.2f F", conditions.Temperature)
-			if err := t.store.Put(types.Measurement{
+			meas := types.Measurement{
 				ID:          outsideID,
 				Name:        "Outdoors",
 				Temperature: conditions.Temperature,
 				MeasuredAt:  t.now(),
-			}); err != nil {
+			}
+			if err := t.store.Put(meas); err != nil {
 				log.Printf("error: %v", err)
 			} else {
-				t.updateWSTemps()
+				t.updateWSTemps(meas)
 			}
 		}
 
@@ -149,15 +150,16 @@ func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[%s] (%s) -> %.3f C", id, name, temperature)
-	if err := t.store.Put(types.Measurement{
+	meas := types.Measurement{
 		ID:          "wirelesstag-" + id,
 		Name:        name,
 		Temperature: types.Celsius(temperature),
 		MeasuredAt:  t.now(),
-	}); err != nil {
+	}
+	if err := t.store.Put(meas); err != nil {
 		log.Printf("error: %v", err)
 	} else {
-		t.updateWSTemps()
+		t.updateWSTemps(meas)
 	}
 }
 
