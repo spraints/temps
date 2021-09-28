@@ -30,6 +30,8 @@ type Temps struct {
 	store     Store
 	templates TemplateLoader
 
+	defaultHandler http.Handler
+
 	ws wsData
 }
 
@@ -52,6 +54,7 @@ func New(weather WeatherClient, store Store, templates TemplateLoader, opts ...O
 	t.store = store
 	t.templates = templates
 	t.now = time.Now
+	t.defaultHandler = http.HandlerFunc(http.NotFound)
 	for _, opt := range opts {
 		opt(t)
 	}
@@ -117,18 +120,24 @@ type temp struct {
 }
 
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
+	if !isPlainTextClient(r) {
+		t.defaultHandler.ServeHTTP(w, r)
+		return
+	}
+
 	data := &showData{
 		Temps: t.getDataForShow(),
 	}
-	tmpl := "show.html.tmpl"
-	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
-		tmpl = "show.text.tmpl"
-		w.Header().Set("Content-Type", "text/plain")
-	}
+	tmpl := "show.text.tmpl"
+	w.Header().Set("Content-Type", "text/plain")
 	if err := t.templates.Get(tmpl).Execute(w, data); err != nil {
 		http.Error(w, "Error", 500)
 		log.Printf("error rendering temperatures: %v", err)
 	}
+}
+
+func isPlainTextClient(r *http.Request) bool {
+	return strings.HasPrefix(r.Header.Get("User-Agent"), "curl")
 }
 
 func (t *Temps) handleTagData(w http.ResponseWriter, r *http.Request) {

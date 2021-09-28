@@ -18,7 +18,7 @@ function startWS(wsURL, tempTable) {
   ws = new WebSocket(wsURL)
   ws.onmessage = function(event) {
     console.log(["WS UPDATE", event])
-    tempTable.innerHTML = event.data
+    //tempTable.innerHTML = event.data
   }
   var restart = function() {
     ws.close()

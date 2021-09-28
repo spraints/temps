@@ -62,17 +62,19 @@ func main() {
 		store = memorystore.New()
 	}
 
+	static := http.FileServer(http.Dir(cfg.PublicPath))
 	svc := temps.New(
 		weather,
 		store,
 		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates),
 		temps.WithTagListSecret(cfg.TagListSecret),
+		temps.WithDefaultHandler(static),
 	)
 
 	var shutdown sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	run(ctx, &shutdown, "poll current temperature", svc.Poll)
-	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, svc))
+	run(ctx, &shutdown, "http server on "+cfg.ListenAddr, newHTTPServer(&cfg, static, svc))
 	<-stopSignal
 	cancel()
 	wait(10*time.Second, &shutdown)
@@ -106,13 +108,13 @@ type service interface {
 	Register(mux chi.Router)
 }
 
-func newHTTPServer(cfg *Config, services ...service) func(context.Context) {
+func newHTTPServer(cfg *Config, static http.Handler, services ...service) func(context.Context) {
 	mux := chi.NewRouter()
 
 	for _, svc := range services {
 		svc.Register(mux)
 	}
-	mux.Mount("/", http.FileServer(http.Dir(cfg.PublicPath)))
+	mux.Mount("/", static)
 
 	server := http.Server{
 		Addr:    cfg.ListenAddr,
