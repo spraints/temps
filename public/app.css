@@ -7,6 +7,15 @@
 .temp-date {
   color: #ccc;
 }
+.age-fresh .temp {
+  color: #040;
+}
+.age-old .temp {
+  color: #444;
+}
+.age-expired .temp {
+  color: #ccc;
+}
 @media only screen and (max-width: 580px) {
   .temp-date {
     display: none;
