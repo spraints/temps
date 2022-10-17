@@ -25,14 +25,14 @@ type Templates struct {
 	templates map[string]Template
 }
 
-func New(basePath string, reloadable bool) *Templates {
+func New(basePath string, reloadable bool, assetTag string) *Templates {
 	return &Templates{
-		load:      loader(basePath, reloadable, mkfact()),
+		load:      loader(basePath, reloadable, mkfact(assetTag)),
 		templates: map[string]Template{},
 	}
 }
 
-func mkfact() func(name string) *template.Template {
+func mkfact(assetTag string) func(name string) *template.Template {
 	tz, err := time.LoadLocation("America/Indiana/Indianapolis")
 	if err != nil {
 		panic(err)
@@ -43,6 +43,7 @@ func mkfact() func(name string) *template.Template {
 		"f":  func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Fahrenheit()) },
 		"t":  func(t time.Time) string { return t.In(tz).Format("15:04 2-Jan-2006 MST") },
 		"ts": func(t time.Time) string { return fmt.Sprint(t.Unix()) },
+		"at": func(path string) string { return path + "?" + assetTag },
 	}
 
 	return func(name string) *template.Template {

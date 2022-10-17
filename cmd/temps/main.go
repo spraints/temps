@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -44,6 +45,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	assetTag := fmt.Sprint(time.Now().Unix())
+
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, syscall.SIGINT, syscall.SIGTERM)
 
@@ -65,7 +68,7 @@ func main() {
 	svc := temps.New(
 		weather,
 		store,
-		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates),
+		templates.New(cfg.TemplatesPath, cfg.ReloadTemplates, assetTag),
 		temps.WithTagListSecret(cfg.TagListSecret),
 	)
 
