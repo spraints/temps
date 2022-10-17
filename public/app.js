@@ -1,3 +1,10 @@
+function boot() {
+  initWS()
+
+  recolor()
+  setInterval(recolor, 600)
+}
+
 function initWS() {
   if (!window.WebSocket) { return }
   var tempTable = document.querySelector('.js-temp-table')
@@ -19,6 +26,7 @@ function startWS(wsURL, tempTable) {
   ws.onmessage = function(event) {
     console.log(["WS UPDATE", event])
     tempTable.innerHTML = event.data
+    recolor()
   }
   var restart = function() {
     ws.close()
@@ -34,4 +42,23 @@ function startWS(wsURL, tempTable) {
   ws.onclose = restart
 }
 
-initWS()
+const HOUR = 3600
+
+function recolor() {
+  var now = new Date().getTime() / 1000
+  var dates = document.querySelectorAll(".temp-date")
+  for (var e of dates) {
+    var ts = e.dataset.ts
+    var age = now - ts
+    var pe = e.parentElement
+    if (age < HOUR) {
+      pe.className = "age-fresh"
+    } else if (age < 4*HOUR) {
+      pe.className = "age-old"
+    } else {
+      pe.className = "age-expired"
+    }
+  }
+}
+
+boot()

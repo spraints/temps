@@ -39,9 +39,10 @@ func mkfact() func(name string) *template.Template {
 	}
 
 	funcs := map[string]interface{}{
-		"c": func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Celsius()) },
-		"f": func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Fahrenheit()) },
-		"t": func(t time.Time) string { return t.In(tz).Format("15:04 2-Jan-2006 MST") },
+		"c":  func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Celsius()) },
+		"f":  func(t types.Temperature) string { return fmt.Sprintf("%3.0f", t.Fahrenheit()) },
+		"t":  func(t time.Time) string { return t.In(tz).Format("15:04 2-Jan-2006 MST") },
+		"ts": func(t time.Time) string { return fmt.Sprint(t.Unix()) },
 	}
 
 	return func(name string) *template.Template {
