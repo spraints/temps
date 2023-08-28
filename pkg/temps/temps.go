@@ -2,6 +2,7 @@ package temps
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sort"
@@ -107,13 +108,13 @@ func (t *Temps) live(w http.ResponseWriter, r *http.Request) {
 }
 
 type showData struct {
-	Temps []temp
+	Temps []temp `json:"temps"`
 }
 
 type temp struct {
-	Label       string
-	Temperature types.Temperature
-	UpdatedAt   time.Time
+	Label       string            `json:"location"`
+	Temperature types.Temperature `json:"value"`
+	UpdatedAt   time.Time         `json:"updated_at"`
 }
 
 func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
@@ -121,9 +122,18 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		Temps: t.getDataForShow(),
 	}
 	tmpl := "show.html.tmpl"
-	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") {
+	if strings.HasPrefix(r.Header.Get("User-Agent"), "curl") || strings.Contains(r.Header.Get("Accept"), "text/plain") {
 		tmpl = "show.text.tmpl"
 		w.Header().Set("Content-Type", "text/plain")
+	}
+	if strings.Contains(r.Header.Get("Accept"), "json") {
+		tmpl = "show.text.tmpl"
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			http.Error(w, "Error", 500)
+			log.Printf("error rendering json temperatures: %v", err)
+		}
+		return
 	}
 	if err := t.templates.Get(tmpl).Execute(w, data); err != nil {
 		http.Error(w, "Error", 500)
