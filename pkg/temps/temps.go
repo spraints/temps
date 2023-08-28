@@ -132,8 +132,8 @@ func (t *Temps) showTemps(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(data); err != nil {
 			http.Error(w, "Error", 500)
 			log.Printf("error rendering json temperatures: %v", err)
-			return
 		}
+		return
 	}
 	if err := t.templates.Get(tmpl).Execute(w, data); err != nil {
 		http.Error(w, "Error", 500)
